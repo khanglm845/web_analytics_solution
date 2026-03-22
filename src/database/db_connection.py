@@ -1,14 +1,13 @@
 import os
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
-from urllib.parse import quote_plus 
+from urllib.parse import quote_plus
 
 load_dotenv()
 
 def get_db_engine():
-
     user = os.getenv("DB_USER")
     password = os.getenv("DB_PASSWORD")
     host = os.getenv("DB_HOST", "localhost")
@@ -16,10 +15,11 @@ def get_db_engine():
     database = os.getenv("DB_NAME", "web_analytics_project")
 
     encoded_password = quote_plus(password)
-    connection_string = f"mysql+pymysql://{user}:{encoded_password}@{host}:{port}/{database}?charset=utf8mb4"
+
+    connection_string = f"mysql+mysqlconnector://{user}:{encoded_password}@{host}:{port}/{database}?charset=utf8mb4"
 
     try:
-        engine = create_engine(connection_string)
+        engine = create_engine(connection_string, pool_pre_ping=True)
         with engine.connect() as conn:
             print("MySQL connection established successfully via SQLAlchemy!")
         return engine
@@ -28,18 +28,9 @@ def get_db_engine():
         return None
 
 def load_df_to_mysql(df, table_name, engine, if_exists='append'):
-    """
-    Utility function to directly insert a Pandas DataFrame into MySQL.
-    
-    :param df: Pandas DataFrame containing the data
-    :param table_name: Name of the MySQL table (e.g., 'stock_prices', 'raw_news')
-    :param engine: SQLAlchemy engine already initialized
-    :param if_exists: 'append' (add to end), 'replace' (drop and recreate), 'fail' (raise error if table exists)
-    """
     if engine is None:
         print("Engine not initialized. Insert operation cancelled.")
         return False
-        
     try:
         df.to_sql(name=table_name, con=engine, if_exists=if_exists, index=False)
         print(f"Successfully saved {len(df)} rows into table '{table_name}'.")
@@ -47,8 +38,3 @@ def load_df_to_mysql(df, table_name, engine, if_exists='append'):
     except Exception as e:
         print(f"Error saving data to table {table_name}: {e}")
         return False
-
-# --- TEST
-if __name__ == "__main__":
-    # Test engine initialization
-    db_engine = get_db_engine()

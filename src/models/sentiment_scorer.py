@@ -73,7 +73,7 @@ class SentimentScorer:
         # 4. Add path
         sys.path.insert(0, os.path.abspath(self.model_dir))
 
-        # 5. Load model (IMPORTANT: đổi working dir)
+        # 5. Load model 
         current_dir = os.getcwd()
 
         try:
@@ -95,9 +95,7 @@ class SentimentScorer:
 
         result_df = self.predictor.predict_batch(df)
 
-        # =========================
-        # Chuẩn hóa output
-        # =========================
+
         if "prob_POS" in result_df.columns and "prob_NEG" in result_df.columns:
             result_df["sentiment_score"] = result_df["prob_POS"] - result_df["prob_NEG"]
         else:

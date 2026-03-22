@@ -5,26 +5,154 @@ import plotly.express as px
 import plotly.graph_objects as go
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
-from datetime import datetime, timedelta, date  # thêm date
+from datetime import datetime, timedelta, date
 import sys
 import os
 from pathlib import Path
+import re
+from collections import Counter
+from underthesea import word_tokenize
 
-# Thêm đường dẫn gốc dự án để import config và db_connection
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from src.config import PORT
 from src.database.db_connection import get_db_engine
 
-# Thiết lập trang
-st.set_page_config(page_title="News Quantifier Dashboard", layout="wide")
+st.set_page_config(page_title="Stock News Dashboard", layout="wide", initial_sidebar_state="expanded")
 
-# Kết nối DB
+# Custom CSS để tạo hiệu ứng đẹp
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0;
+        color: #1E3A8A;
+    }
+    .sub-header {
+        font-size: 1rem;
+        color: #6B7280;
+        margin-top: -0.5rem;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+    .metric-label {
+        font-size: 0.9rem;
+        color: #f0f0f0;
+        opacity: 0.9;
+    }
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: white;
+    }
+    .metric-delta {
+        font-size: 0.9rem;
+        color: #c3e0ff;
+    }
+    .stButton button {
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 20px;
+        padding: 0.5rem 1.5rem;
+        font-weight: bold;
+    }
+    .stButton button:hover {
+        background-color: #45a049;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 engine = get_db_engine()
 if engine is None:
-    st.error("Cannot connect to database. Please check your connection.")
+    st.error("❌ Cannot connect to database. Please check your connection.")
     st.stop()
 
-# Hàm load dữ liệu từ database (có cache)
+# =========================
+# STOPWORDS (từ EDA)
+# =========================
+basic_stopwords = set("""
+và là của có trong một những các đã đang sẽ cho khi thì mà được với về từ này kia đó đây ấy vì do nên nếu cũng chỉ lại ra lên xuống vào đi đến rồi như
+tôi nhà đầu tư thị trường người công ty doanh nghiệp đơn vị tổ chức vẫn trên trước sau cùng hơn ông bà
+""".split())
+
+news_stopwords = set("""
+theo cho biết ghi nhận cho rằng nhận định đánh giá thông tin dữ liệu báo cáo công bố
+cập nhật tin tức phiên ngày tháng năm quý sáng chiều hôm nay hôm qua
+trong đó liên quan bao gồm đối với tại đây hiện nay vừa qua thời gian gần đây
+ngày tuần tháng quý năm
+""".split())
+
+finance_neutral = set("""
+cổ phiếu cp mã chứng khoán sàn hose hnx upcom vnindex vn30 index
+thị trường thanh khoản khối lượng giao dịch nhà đầu tư dòng tiền
+niêm yết đăng ký giao dịch vốn điều lệ cổ đông doanh nghiệp
+""".split())
+
+tickers_stopwords = set("""
+hag ttf acb bcm bid bvh ctg fpt gas gvr hdb hpg mbb msn mwg plx pow sab shb ssb ssi stb tcb tpb vcb vhm vib vic vjc vnm vpb vre
+""".split())
+
+numeric_stopwords = set("""
+tỷ triệu nghìn phần trăm đồng vnđ usd lần
+""".split())
+
+neutral_verbs = set("""
+tăng giảm đi lên đi xuống biến động điều chỉnh giao dịch mua bán
+ghi nhận đạt mức dao động mở cửa đóng cửa
+""".split())
+
+special_words = set(['chứng_khoán', 'giao_dịch', 'thị_trường', 'vingroup','công_ty', 'cổ_phiếu'])
+
+stopwords_raw = (
+    basic_stopwords
+    | news_stopwords
+    | finance_neutral
+    | tickers_stopwords
+    | numeric_stopwords
+    | neutral_verbs
+    | special_words
+)
+
+# Tokenize stopwords
+stopwords_final = set()
+for w in stopwords_raw:
+    tokens = word_tokenize(w, format="text").split()
+    stopwords_final.update(tokens)
+
+# =========================
+# TEXT CLEANING FUNCTIONS
+# =========================
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'\d+', ' ', text)          # xóa số
+    text = re.sub(r'[^\w\s]', ' ', text)      # xóa dấu câu
+    return text
+
+def process_text(text):
+    text = clean_text(text)
+    tokens = word_tokenize(text, format="text").split()
+    tokens = [w for w in tokens if w not in stopwords_final and len(w) > 1]
+    return tokens
+
+def get_token_frequencies(df_texts):
+    """Từ danh sách các chuỗi text, trả về Counter của các token đã xử lý."""
+    all_tokens = []
+    for text in df_texts:
+        tokens = process_text(text)
+        all_tokens.extend(tokens)
+    return Counter(all_tokens)
+
+# =========================
+# LOAD DATA
+# =========================
 @st.cache_data(ttl=3600)
 def load_news_analytics():
     query = """
@@ -41,7 +169,6 @@ def load_news_analytics():
 
 @st.cache_data(ttl=3600)
 def load_stock_prices(tickers):
-    # Lấy giá cổ phiếu (close) cho các ticker
     placeholders = ','.join([f"'{t}'" for t in tickers])
     query = f"""
         SELECT ticker, time, close
@@ -53,211 +180,158 @@ def load_stock_prices(tickers):
     df['time'] = pd.to_datetime(df['time'])
     return df
 
-# Load dữ liệu
-tickers = ['VIC', 'HAG', 'TTF']
+all_tickers = ['VIC', 'HAG', 'TTF']
 df_news = load_news_analytics()
-df_prices = load_stock_prices(tickers)
+df_prices = load_stock_prices(all_tickers)
 
-# ==================== Sidebar Filters ====================
-st.sidebar.header("Filters")
+# Sidebar
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=80)
+st.sidebar.markdown("## Filters")
+ticker = st.sidebar.selectbox("Stock", all_tickers, index=0)
 
-# Ticker slicer: checkbox
-selected_tickers = st.sidebar.multiselect(
-    "Select Ticker(s)",
-    options=tickers,
-    default=tickers,
-    help="Choose one or more stocks"
-)
+# Date range
+min_date = df_news['publish_time'].min().date()
+max_date = df_news['publish_time'].max().date()
+default_start = max_date - timedelta(days=30)
+start_date = st.sidebar.date_input("Start date", default_start, min_value=min_date, max_value=max_date)
+end_date = st.sidebar.date_input("End date", max_date, min_value=min_date, max_value=max_date)
 
-# Time slicer: date range picker
-if not df_news.empty:
-    min_date = df_news['publish_time'].min().date()
-    max_date = df_news['publish_time'].max().date()
-else:
-    min_date = datetime.now().date()
-    max_date = datetime.now().date()
+# Label filter
+label_filter = st.sidebar.multiselect("Label", ["POS", "NEU", "NEG"], default=["POS", "NEU", "NEG"])
 
-default_start = max_date - timedelta(days=7)
+st.sidebar.markdown("---")
+st.sidebar.caption("Data updated daily | Powered by AI")
 
-date_range = st.sidebar.date_input(
-    "Date Range",
-    value=(default_start, max_date),
-    min_value=min_date,
-    max_value=max_date
-)
-
-# Xử lý giá trị trả về (có thể là tuple hoặc single date)
-if isinstance(date_range, (date,)):  # sửa thành date
-    start_date = date_range
-    end_date = date_range
-elif len(date_range) == 1:
-    start_date = date_range[0]
-    end_date = date_range[0]
-elif len(date_range) == 2:
-    start_date, end_date = date_range
-else:
-    start_date, end_date = default_start, max_date
-
-# Lọc dữ liệu theo filters
+# Filter data
 df_news_filtered = df_news[
-    (df_news['ticker'].isin(selected_tickers)) &
+    (df_news['ticker'] == ticker) &
     (df_news['publish_time'].dt.date >= start_date) &
-    (df_news['publish_time'].dt.date <= end_date)
-]
+    (df_news['publish_time'].dt.date <= end_date) &
+    (df_news['label'].isin(label_filter))
+].copy()
 
-# ==================== KPI Cards ====================
-st.header("KPI Dashboard")
+df_prices_filtered = df_prices[
+    (df_prices['ticker'] == ticker) &
+    (df_prices['time'].dt.date >= start_date) &
+    (df_prices['time'].dt.date <= end_date)
+].copy()
 
-# Tính các chỉ số dựa trên dữ liệu đã lọc
-if not df_news_filtered.empty:
-    # Average Sentiment Score (24h qua) – tính cho ngày cuối cùng trong khoảng
-    last_day = end_date
-    df_last_day = df_news_filtered[df_news_filtered['publish_time'].dt.date == last_day]
-    avg_sentiment_last_day = df_last_day['sentiment_score'].mean() if not df_last_day.empty else 0.0
+# Header
+st.markdown('<p class="main-header">Stock News Intelligence</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Real-time sentiment analysis powered by PhoBERT</p>', unsafe_allow_html=True)
 
-    # Negative Alerts: số lượng bài Negative trong khoảng thời gian
-    negative_count = df_news_filtered[df_news_filtered['label'] == 'NEG'].shape[0]
-
-    # Portfolio Return: % biến động giá trung bình của danh mục trong khoảng thời gian
-    price_changes = []
-    for ticker in selected_tickers:
-        df_ticker = df_prices[df_prices['ticker'] == ticker]
-        df_ticker = df_ticker[(df_ticker['time'].dt.date >= start_date) & (df_ticker['time'].dt.date <= end_date)]
-        if not df_ticker.empty:
-            first_price = df_ticker.iloc[0]['close']
-            last_price = df_ticker.iloc[-1]['close']
-            if first_price != 0:
-                change = (last_price - first_price) / first_price * 100
-                price_changes.append(change)
-    portfolio_return = sum(price_changes) / len(price_changes) if price_changes else 0.0
-
-    # Top Mover: mã cổ phiếu có số lượng bài Negative cao nhất
-    neg_by_ticker = df_news_filtered[df_news_filtered['label'] == 'NEG'].groupby('ticker').size()
-    if not neg_by_ticker.empty:
-        top_mover = neg_by_ticker.idxmax()
-    else:
-        top_mover = "None"
-else:
-    avg_sentiment_last_day = 0.0
-    negative_count = 0
-    portfolio_return = 0.0
-    top_mover = "N/A"
-
-# Hiển thị KPI Cards
+# KPI Cards
 col1, col2, col3, col4 = st.columns(4)
+
 with col1:
-    st.metric("Avg Sentiment Score (24h)", f"{avg_sentiment_last_day:.2f}", delta_color="inverse" if avg_sentiment_last_day < 0 else "normal")
-with col2:
-    st.metric("Negative Alerts", negative_count)
-with col3:
-    st.metric("Portfolio Return (%)", f"{portfolio_return:.2f}%")
-with col4:
-    st.metric("Top Mover", top_mover)
-
-# ==================== Main Visuals ====================
-st.header("Main Visuals")
-
-# Biểu đồ 1: Sentiment vs Price (Dual-axis)
-st.subheader("Sentiment vs Price")
-selected_ticker_for_chart = st.selectbox("Select Ticker for Chart", selected_tickers if selected_tickers else tickers, key="ticker_chart")
-
-# Lấy dữ liệu cho ticker được chọn
-df_ticker_news = df_news_filtered[df_news_filtered['ticker'] == selected_ticker_for_chart].copy()
-df_ticker_news['date'] = df_ticker_news['publish_time'].dt.date
-# Tính sentiment trung bình theo ngày
-sentiment_daily = df_ticker_news.groupby('date')['sentiment_score'].mean().reset_index()
-sentiment_daily['date'] = pd.to_datetime(sentiment_daily['date'])
-
-# Lấy dữ liệu giá cho ticker được chọn
-df_ticker_price = df_prices[df_prices['ticker'] == selected_ticker_for_chart].copy()
-df_ticker_price['date'] = df_ticker_price['time'].dt.date
-price_daily = df_ticker_price.groupby('date')['close'].last().reset_index()
-price_daily['date'] = pd.to_datetime(price_daily['date'])
-
-# Merge dữ liệu sentiment và giá trên ngày
-merged = pd.merge(sentiment_daily, price_daily, on='date', how='inner')
-if not merged.empty:
-    fig = go.Figure()
-    # Cột sentiment
-    colors = ['red' if x < 0 else 'green' for x in merged['sentiment_score']]
-    fig.add_trace(go.Bar(
-        x=merged['date'],
-        y=merged['sentiment_score'],
-        name='Sentiment Score',
-        marker_color=colors,
-        yaxis='y'
-    ))
-    # Đường giá
-    fig.add_trace(go.Scatter(
-        x=merged['date'],
-        y=merged['close'],
-        name='Close Price',
-        yaxis='y2',
-        mode='lines+markers',
-        line=dict(color='blue')
-    ))
-    fig.update_layout(
-        title=f"{selected_ticker_for_chart} - Sentiment vs Price",
-        xaxis_title="Date",
-        yaxis=dict(title="Sentiment Score", side="left", range=[-1, 1]),
-        yaxis2=dict(title="Close Price", side="right", overlaying='y'),
-        legend=dict(x=0, y=1.1),
-        hovermode='x unified'
-    )
-    st.plotly_chart(fig, width='stretch')
-else:
-    st.info("No data available for the selected ticker and time range.")
-
-# Biểu đồ 2: Scatter Plot – Hiệu ứng bất đối xứng (sentiment score vs price change)
-st.subheader("Asymmetry Effect")
-if not merged.empty:
-    # Tính % thay đổi giá từ ngày trước
-    merged['price_change'] = merged['close'].pct_change() * 100
-    merged = merged.dropna(subset=['price_change'])
-    # Tạm thời tắt trendline để tránh lỗi statsmodels (có thể cài statsmodels sau)
-    fig2 = px.scatter(
-        merged, x='sentiment_score', y='price_change',
-        title="Sentiment Score vs Price Change (%)",
-        labels={'sentiment_score': 'Sentiment Score', 'price_change': 'Price Change (%)'},
-        # trendline="ols"  # Uncomment nếu đã cài statsmodels
-    )
-    st.plotly_chart(fig2, width='stretch')
-else:
-    st.info("Insufficient data for scatter plot.")
-
-# ==================== Diagnostic View ====================
-st.header("Diagnostic View")
-
-# Word Cloud: lấy các tin Negative trong ngày cuối cùng
-if not df_news_filtered.empty:
-    # Lấy các tin Negative trong ngày cuối cùng
-    last_day_neg = df_last_day[df_last_day['label'] == 'NEG'] if 'df_last_day' in locals() else pd.DataFrame()
-    if not last_day_neg.empty:
-        # Ghép tất cả title và sapo (text) để tạo word cloud
-        text = " ".join(last_day_neg['text'].fillna('').tolist())
-        if text.strip():
-            wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
-            fig_wc, ax = plt.subplots(figsize=(10, 5))
-            ax.imshow(wordcloud, interpolation='bilinear')
-            ax.axis('off')
-            st.pyplot(fig_wc)
-        else:
-            st.info("No text data for negative news in the last day.")
+    if not df_prices_filtered.empty:
+        last_price = df_prices_filtered.iloc[-1]['close']
+        first_price = df_prices_filtered.iloc[0]['close']
+        pct_change = ((last_price - first_price) / first_price) * 100 if first_price != 0 else 0
+        delta = f"{pct_change:+.2f}%"
+        delta_color = "🔴" if pct_change < 0 else "🟢"
     else:
-        st.info("No negative news in the last day.")
-else:
-    st.info("No news data available for the selected filters.")
+        last_price = 0
+        delta = "0%"
+        delta_color = "⚪️"
+    st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Current Price</div>
+            <div class="metric-value">{last_price:,.0f} VND</div>
+            <div class="metric-delta">{delta_color} {delta}</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-# Bảng báo cáo luồng tin
-st.subheader("News Feed")
-# Chọn các cột hiển thị
-cols_to_show = ['publish_time', 'ticker', 'title', 'label', 'sentiment_score', 'url']
+with col2:
+    avg_sentiment = df_news_filtered['sentiment_score'].mean() if not df_news_filtered.empty else 0
+    sent_color = "🟢" if avg_sentiment > 0 else ("🔴" if avg_sentiment < 0 else "⚪️")
+    st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Avg Sentiment</div>
+            <div class="metric-value">{avg_sentiment:.3f}</div>
+            <div class="metric-delta">{sent_color} from -1 to +1</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    news_volume = len(df_news_filtered)
+    st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">News Volume</div>
+            <div class="metric-value">{news_volume}</div>
+            <div class="metric-delta">📰 articles</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+with col4:
+    neg_count = len(df_news_filtered[df_news_filtered['label'] == 'NEG'])
+    st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Negative Alerts</div>
+            <div class="metric-value">{neg_count}</div>
+            <div class="metric-delta">🔴 articles with negative sentiment</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+# Word Clouds: Positive và Negative (sử dụng preprocessing từ EDA)
+st.markdown("### ☁️ Sentiment Word Clouds (Cleaned)")
+col_wc1, col_wc2 = st.columns(2)
+
+with col_wc1:
+    st.markdown("#### 🔴 Negative News")
+    neg_news = df_news_filtered[df_news_filtered['label'] == 'NEG']['text']
+    if not neg_news.empty:
+        neg_freq = get_token_frequencies(neg_news)
+        if neg_freq:
+            wordcloud_neg = WordCloud(width=600, height=400, background_color='white',
+                                      colormap='Reds', max_words=100).generate_from_frequencies(neg_freq)
+            fig_neg, ax_neg = plt.subplots(figsize=(8, 5))
+            ax_neg.imshow(wordcloud_neg, interpolation='bilinear')
+            ax_neg.axis('off')
+            st.pyplot(fig_neg)
+        else:
+            st.info("No negative news tokens to display.")
+    else:
+        st.info("No negative news in selected period.")
+
+with col_wc2:
+    st.markdown("#### 🟢 Positive News")
+    pos_news = df_news_filtered[df_news_filtered['label'] == 'POS']['text']
+    if not pos_news.empty:
+        pos_freq = get_token_frequencies(pos_news)
+        if pos_freq:
+            wordcloud_pos = WordCloud(width=600, height=400, background_color='white',
+                                      colormap='Greens', max_words=100).generate_from_frequencies(pos_freq)
+            fig_pos, ax_pos = plt.subplots(figsize=(8, 5))
+            ax_pos.imshow(wordcloud_pos, interpolation='bilinear')
+            ax_pos.axis('off')
+            st.pyplot(fig_pos)
+        else:
+            st.info("No positive news tokens to display.")
+    else:
+        st.info("No positive news in selected period.")
+
+# News Feed Table
+st.markdown("### 📰 Latest News")
 if not df_news_filtered.empty:
-    # Sắp xếp theo thời gian mới nhất
-    display_df = df_news_filtered.sort_values('publish_time', ascending=False)[cols_to_show]
-    # Định dạng thời gian
+    display_df = df_news_filtered.sort_values('publish_time', ascending=False)[
+        ['publish_time', 'title', 'label', 'sentiment_score', 'url']
+    ].copy()
     display_df['publish_time'] = display_df['publish_time'].dt.strftime('%Y-%m-%d %H:%M')
-    # Hiển thị bảng
-    st.dataframe(display_df, width='stretch')
+    def color_label(label):
+        if label == 'POS':
+            return '🟢 POS'
+        elif label == 'NEG':
+            return '🔴 NEG'
+        else:
+            return '⚪️ NEU'
+    display_df['label'] = display_df['label'].apply(color_label)
+    display_df['sentiment_score'] = display_df['sentiment_score'].apply(lambda x: f"{x:.3f}")
+    display_df['url'] = display_df['url'].apply(lambda x: f'<a href="{x}" target="_blank">🔗</a>')
+    st.write(display_df.to_html(escape=False, index=False), unsafe_allow_html=True)
 else:
-    st.info("No news data available for the selected filters.")
+    st.info("No news available for selected filters.")
+
+# Footer
+st.markdown("---")
+st.caption("Data sources: CafeF, vnstock | Model: PhoBERT fine-tuned")

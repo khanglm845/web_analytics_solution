@@ -1,21 +1,16 @@
--- 1. Tạo Database
 CREATE DATABASE IF NOT EXISTS web_analytics_project
 CHARACTER SET utf8mb4 
 COLLATE utf8mb4_unicode_ci; 
 
 USE web_analytics_project;
 
--- ===========================================================================
--- 2. BẢNG DANH MỤC CỔ PHIẾU (DIMENSION TABLE)
--- ===========================================================================
+
 CREATE TABLE IF NOT EXISTS stocks (
     ticker VARCHAR(10) PRIMARY KEY,       
     company_name VARCHAR(255) NOT NULL,
     sector VARCHAR(100));
 
--- ===========================================================================
--- 3. BẢNG DỮ LIỆU GIÁ (FACT TABLE)
--- ===========================================================================
+
 CREATE TABLE IF NOT EXISTS stock_prices (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     `time` DATETIME NOT NULL,   
@@ -30,9 +25,7 @@ CREATE TABLE IF NOT EXISTS stock_prices (
     INDEX idx_ticker_time (ticker, `time`)
 );
 
--- ===========================================================================
--- 4. BẢNG DỮ LIỆU TIN TỨC THÔ (RAW DATA)
--- ===========================================================================
+
 CREATE TABLE IF NOT EXISTS raw_news (
     news_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     ticker VARCHAR(10) NOT NULL,      
@@ -45,9 +38,7 @@ CREATE TABLE IF NOT EXISTS raw_news (
     INDEX idx_news_time (ticker, publish_time)
 );
 
--- ===========================================================================
--- 5. BẢNG KẾT QUẢ PHÂN TÍCH NLP (ANALYTICS TABLE)
--- ===========================================================================
+
 CREATE TABLE IF NOT EXISTS news_analytics (
     analytics_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     news_id BIGINT NOT NULL UNIQUE, 

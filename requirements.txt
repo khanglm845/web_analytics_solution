@@ -1,24 +1,24 @@
-# 1. Data Collection (Web Crawling & API)
+# Core
+pandas
+numpy
+requests
+beautifulsoup4
+sqlalchemy
+pymysql
+mysql-connector-python
+python-dotenv
+streamlit
+plotly
+wordcloud
+matplotlib
+tqdm
 
-beautifulsoup4>=4.12.0
-webdriver-manager>=4.0.0
-vnstock>=0.2.8.8 
+# NLP / Transformers
+torch
+transformers
+huggingface_hub
+safetensors
+underthesea
 
-# 2. Data Manipulation & Analysis
-pandas>=2.0.0
-numpy>=1.24.0
-
-# 3. NLP & Deep Learning (Core Model)
-# torch>=2.0.0     
-# transformers>=4.30.0 
-# pyvi>=0.1.1     
-
-# 4. Database & Environment
-python-dotenv>=1.0.0
-SQLAlchemy>=2.0.0  
-pymysql>=1.1.0      
-
-# 5. Dashboard & Visualization
-streamlit>=1.25.0
-plotly>=5.15.0       
-matplotlib>=3.7.0    
+# Others
+vnstock

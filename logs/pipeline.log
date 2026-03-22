@@ -1,0 +1,48 @@
+2026-03-22 20:33:33,790 - ERROR - Cannot connect to database. Pipeline stopped.
+2026-03-22 20:34:36,147 - INFO - Database connection OK.
+2026-03-22 20:34:36,148 - WARNING - Invalid last_run content: 
+2026-03-22 20:34:36,149 - INFO - No previous run. Crawling all data.
+2026-03-22 20:34:36,150 - INFO - Starting crawler...
+2026-03-22 20:34:36,151 - INFO - Crawling all news (first run)
+2026-03-22 21:46:55,597 - INFO - Crawling prices from 2016-01-01 to 2026-03-22
+2026-03-22 21:47:05,732 - INFO - Crawler completed successfully.
+2026-03-22 21:47:05,743 - INFO - Starting time mapping...
+2026-03-22 21:47:06,373 - INFO - Time mapping completed.
+2026-03-22 21:47:06,378 - INFO - Starting sentiment scoring...
+2026-03-22 21:47:06,379 - INFO - Loading data from C:\Users\DELL\OneDrive\Phân tích Web\PTDL_WEB_PROJECT\data\processed\df_merged.csv
+2026-03-22 21:47:06,495 - INFO - Prepared 665 rows
+2026-03-22 21:47:06,496 - INFO - Loading StockSentimentPredictor...
+2026-03-22 21:47:36,314 - INFO - HTTP Request: GET https://huggingface.co/api/models/mnguyn11/phobert-stock-sentiment-vn30/revision/main "HTTP/1.1 200 OK"
+2026-03-22 21:47:37,090 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-22 21:47:37,103 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vinai/phobert-base/c1e37c5c86f918761049cef6fa216b4779d0d01d/config.json "HTTP/1.1 200 OK"
+2026-03-22 21:47:38,131 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+2026-03-22 21:47:38,132 - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-03-22 21:47:38,793 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base "HTTP/1.1 200 OK"
+2026-03-22 21:47:39,233 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/commits/main "HTTP/1.1 200 OK"
+2026-03-22 21:47:39,550 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/discussions?p=0 "HTTP/1.1 200 OK"
+2026-03-22 21:47:39,977 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/commits/refs%2Fpr%2F7 "HTTP/1.1 200 OK"
+2026-03-22 21:47:40,349 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/refs%2Fpr%2F7/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+2026-03-22 21:47:40,653 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/refs%2Fpr%2F7/model.safetensors "HTTP/1.1 302 Found"
+2026-03-22 21:47:44,258 - INFO - Model loaded successfully
+2026-03-22 21:47:44,259 - INFO - Running prediction...
+2026-03-22 21:56:17,266 - INFO - Saved CSV to C:\Users\DELL\OneDrive\Phân tích Web\PTDL_WEB_PROJECT\data\model\sentiment_scores.csv
+2026-03-22 21:56:17,534 - INFO - Inserted 665 rows into database
+2026-03-22 21:56:17,534 - INFO - Sentiment scoring completed successfully!
+2026-03-22 21:56:17,595 - INFO - Sentiment scoring completed.
+2026-03-22 21:56:17,599 - INFO - Pipeline completed successfully. Last run updated to 2026-03-22 21:56:17.596235
+2026-03-23 00:27:30,708 - INFO - Database connection OK.
+2026-03-23 00:27:30,724 - INFO - Last successful run: 2026-03-22 21:56:17.596235. Crawling data from 2026-03-21 21:56:17.596235
+2026-03-23 00:27:30,725 - INFO - Starting crawler...
+2026-03-23 00:27:30,725 - INFO - Crawling news from 2026-03-21
+2026-03-23 00:34:48,402 - INFO - Database connection OK.
+2026-03-23 00:34:48,404 - INFO - Last successful run: 2026-03-22 21:56:17.596235. Crawling data from 2026-03-21 21:56:17.596235
+2026-03-23 00:34:48,404 - INFO - Starting crawler...
+2026-03-23 00:34:48,404 - INFO - Crawling news from 2026-03-21
+2026-03-23 00:42:26,200 - INFO - Database connection OK.
+2026-03-23 00:42:26,201 - INFO - Last successful run: 2026-03-22 21:56:17.596235. Crawling data from 2026-03-21 21:56:17.596235
+2026-03-23 00:42:26,201 - INFO - Starting crawler...
+2026-03-23 00:42:26,202 - INFO - Crawling news from 2026-03-21
+2026-03-23 00:44:17,860 - INFO - Database connection OK.
+2026-03-23 00:44:17,861 - INFO - Last successful run: 2026-03-22 21:56:17.596235. Crawling data from 2026-03-21 21:56:17.596235
+2026-03-23 00:44:17,861 - INFO - Starting crawler...
+2026-03-23 00:44:17,861 - INFO - Crawling news from 2026-03-21
