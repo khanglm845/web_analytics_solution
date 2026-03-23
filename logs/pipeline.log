@@ -77,3 +77,8 @@
 2026-03-23 12:29:33,723 - INFO - Sentiment scoring completed.
 2026-03-23 12:29:33,725 - INFO - Updated last_run to 2026-03-23T12:29:33.723912
 2026-03-23 12:29:33,726 - INFO - Pipeline completed successfully. Last run updated to 2026-03-23 12:29:33.723912
+2026-03-23 20:49:20,650 - INFO - Database connection OK.
+2026-03-23 20:49:20,652 - INFO - Starting crawler...
+2026-03-23 20:49:20,652 - INFO - Crawling all news via API (first run)
+2026-03-23 20:49:30,822 - INFO - Crawling prices from 2016-01-01 to 2026-03-23
+2026-03-23 20:49:39,555 - INFO - Crawler completed successfully.

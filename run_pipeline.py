@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.append(str(BASE_DIR))
 
 from src.database.db_connection import get_db_engine
-from src.crawlers.cafef_scraper import scrape_cafef_news
+from src.crawlers.cafef_api_scraper import scrape_cafef_api
 from src.crawlers.vnstock_api import get_price_data, save_to_db as save_price_to_db
 
 LOG_DIR = BASE_DIR / "logs"
@@ -61,13 +61,13 @@ def run_crawler(since_date=None):
 
     if since_date:
         since_str = since_date.strftime('%Y-%m-%d')
-        logger.info(f"Crawling news from {since_str}")
+        logger.info(f"Crawling news via API from {since_str}")
     else:
         since_str = None
-        logger.info("Crawling all news (first run)")
+        logger.info("Crawling all news via API (first run)")
 
     try:
-        scrape_cafef_news(stocks, since_date=since_str)
+        scrape_cafef_api(stocks, since_date=since_str, page_size=20)
     except Exception as e:
         logger.error(f"News crawler failed: {e}", exc_info=True)
         return False

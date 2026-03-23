@@ -47,6 +47,15 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         continue-on-error: true
 
+      - name: Run sentiment (debug)
+        env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: python run_pipeline.py --step sentiment
+
       - name: Run pipeline
         env:
           DB_USER: ${{ secrets.DB_USER }}
