@@ -1,3 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Data
+data/raw/
+data/processed/
+data/model/
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+
 # Environment variables
 .env
-last_run.txtdata/model/phobert-stock-sentiment-vn30
+last_run.txt
+
+# Streamlit
+.streamlit/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model cache (tránh lỗi submodule)
+data/model/phobert-stock-sentiment-vn30/data/model/phobert-stock-sentiment-vn30
