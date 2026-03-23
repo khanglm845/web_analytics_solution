@@ -17,10 +17,12 @@ def get_db_engine():
     if not user or not password:
         print("Missing DB_USER or DB_PASSWORD environment variables")
         return None
-    if not host or not port or not database:
-        print("Missing DB_HOST, DB_PORT, or DB_NAME environment variables")
+    if not host or not database:
+        print("Missing DB_HOST or DB_NAME environment variables")
         return None
 
+    if not port or str(port).strip() == "":
+        port = "3306"
     try:
         port = int(port)
     except ValueError:
@@ -32,6 +34,7 @@ def get_db_engine():
 
     try:
         engine = create_engine(connection_string, pool_pre_ping=True)
+
         with engine.connect() as conn:
             print("MySQL connection established successfully via SQLAlchemy!")
         return engine
