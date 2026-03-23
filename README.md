@@ -59,14 +59,17 @@ source .venv/bin/activate
 ```text
 pip install -r requirements.txt
 ```
-4. Configure environment variables | Create a .env file in the root directory (copy from .env.example):
+4. Configure environment variables 
++ **Option A (local MySQL):** Create a database and update .env with your local credentials.
+
++ **Option B (Clever Cloud):** After creating a MySQL instance on Clever Cloud, copy the connection details and update .env accordingly. Example:
 
 ```text
 DB_USER=root
 DB_PASSWORD=your_password
 DB_HOST=localhost
 DB_PORT=3306
-DB_NAME=vn30_news
+DB_NAME=stock_news
 ```
 5. Set up the MySQL database
 Run the provided database_schema.sql to create the required tables:
@@ -103,12 +106,74 @@ python run_pipeline.py --step sentiment      # only run sentiment scoring
 ```text
 streamlit run dashboard/app.py
 ```
-### Automate with Task Scheduler (Windows)
+#### Deployment on Streamlit Cloud
+1. Push your code to GitHub.
+
+2. Go to Streamlit Cloud, sign in with GitHub.
+
+3. Click New app, select your repository, branch, and entry point (dashboard/app.py).
+
+4. In Advanced settings, set Python version to 3.10.
+
+5. Add Secrets (TOML format) with your database credentials:
+```text
+DB_USER = "u2csm0chlybzznu1"
+DB_PASSWORD = "17WBU0XiFTDk3JiXAinZ"
+DB_HOST = "bzuoyb19zgyn77emwisi-mysql.services.clever-cloud.com"
+DB_PORT = "3306"
+DB_NAME = "bzuoyb19zgyn77emwisi"
+```
+6. Click Deploy. The app will be available at ```https://your-app.streamlit.app.```
+
+### Automation
+#### Option A: Local
 1. Open Task Scheduler.
 
 2. Create a new task with a daily trigger (e.g., 7:00 AM).
 
 3. Action: start program python.exe with argument run_pipeline.py in the project directory.
+
+#### Option B: Cloud
+1. Create GitHub Actions workflow
+Create a file .github/workflows/daily_pipeline.yml in your repository with the following content:
+```text
+name: Daily Pipeline
+
+on:
+  schedule:
+    # Runs at 7:00 AM UTC+7 (00:00 UTC) every day
+    - cron: "0 0 * * *"
+  workflow_dispatch:  # allows manual trigger
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pipeline
+        run: python run_pipeline.py
+        env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+```
+2. Add repository secrets
+Go to your GitHub repository → Settings → Secrets and variables → Actions → New repository secret.
 
 ## 📊 Dashboard Overview
 + **Filter Sidebar:** Stock ticker, date range, and sentiment label filter.
