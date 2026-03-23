@@ -2,7 +2,7 @@ name: Daily Pipeline
 
 on:
   push:
-    branches: [ main, master ]  
+    branches: [ main ]
   schedule:
     - cron: '0 7 * * *'
   workflow_dispatch:
@@ -14,11 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: master  
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -41,27 +37,6 @@ jobs:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_NAME: ${{ secrets.DB_NAME }}
-
-      - name: Test MySQL connection (optional)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mysql-client
-          mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD -e "SELECT 1"
-        env:
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        continue-on-error: true
-
-      - name: Run sentiment (debug)
-        env:
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-        run: python run_pipeline.py --step sentiment
 
       - name: Run pipeline
         env:
