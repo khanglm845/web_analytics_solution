@@ -236,7 +236,7 @@ with col1:
     st.markdown(f"""
         <div class="metric-card">
             <div class="metric-label">Current Price</div>
-            <div class="metric-value">{last_price:,.0f} VND</div>
+            <div class="metric-value">{last_price:,.0f}K VND</div>
             <div class="metric-delta">{delta_color} {delta}</div>
         </div>
     """, unsafe_allow_html=True)
