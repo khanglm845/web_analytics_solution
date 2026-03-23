@@ -15,10 +15,10 @@ def get_db_engine():
     database = os.getenv("DB_NAME", "web_analytics_project")
 
     if not user or not password:
-        print("Missing DB_USER or DB_PASSWORD environment variables")
+        print("❌ Missing DB_USER or DB_PASSWORD environment variables")
         return None
     if not host or not database:
-        print("Missing DB_HOST or DB_NAME environment variables")
+        print("❌ Missing DB_HOST or DB_NAME environment variables")
         return None
 
     if not port or str(port).strip() == "":
@@ -26,7 +26,7 @@ def get_db_engine():
     try:
         port = int(port)
     except ValueError:
-        print(f"Invalid DB_PORT: {port}, using default 3306")
+        print(f"⚠️ Invalid DB_PORT: {port}, using default 3306")
         port = 3306
 
     encoded_password = quote_plus(password)
@@ -34,22 +34,21 @@ def get_db_engine():
 
     try:
         engine = create_engine(connection_string, pool_pre_ping=True)
-
         with engine.connect() as conn:
-            print("MySQL connection established successfully via SQLAlchemy!")
+            print("✅ MySQL connection established successfully via SQLAlchemy!")
         return engine
     except SQLAlchemyError as e:
-        print(f"Database connection error: {e}")
+        print(f"❌ Database connection error: {e}")
         return None
 
 def load_df_to_mysql(df, table_name, engine, if_exists='append'):
     if engine is None:
-        print("Engine not initialized. Insert operation cancelled.")
+        print("❌ Engine not initialized. Insert operation cancelled.")
         return False
     try:
         df.to_sql(name=table_name, con=engine, if_exists=if_exists, index=False)
-        print(f"Successfully saved {len(df)} rows into table '{table_name}'.")
+        print(f"✅ Successfully saved {len(df)} rows into table '{table_name}'.")
         return True
     except Exception as e:
-        print(f"Error saving data to table {table_name}: {e}")
+        print(f"❌ Error saving data to table {table_name}: {e}")
         return False
