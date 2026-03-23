@@ -58,7 +58,6 @@ def check_database():
 def run_crawler(since_date=None):
     logger.info("Starting crawler...")
     stocks = ["VIC", "HAG", "TTF"]
-
     if since_date:
         since_str = since_date.strftime('%Y-%m-%d')
         logger.info(f"Crawling news via API from {since_str}")
@@ -67,7 +66,8 @@ def run_crawler(since_date=None):
         logger.info("Crawling all news via API (first run)")
 
     try:
-        scrape_cafef_api(stocks, since_date=since_str, page_size=20)
+        num_pages = 10 if since_str is None else 1
+        scrape_cafef_api(stocks, since_date=since_str, num_pages=num_pages)
     except Exception as e:
         logger.error(f"News crawler failed: {e}", exc_info=True)
         return False

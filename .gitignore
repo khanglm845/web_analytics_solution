@@ -30,5 +30,5 @@ last_run.txt
 .DS_Store
 Thumbs.db
 
-# Model cache (tránh lỗi submodule)
+# Model cache
 data/model/phobert-stock-sentiment-vn30/data/model/phobert-stock-sentiment-vn30

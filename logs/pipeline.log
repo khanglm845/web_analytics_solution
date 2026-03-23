@@ -82,3 +82,11 @@
 2026-03-23 20:49:20,652 - INFO - Crawling all news via API (first run)
 2026-03-23 20:49:30,822 - INFO - Crawling prices from 2016-01-01 to 2026-03-23
 2026-03-23 20:49:39,555 - INFO - Crawler completed successfully.
+2026-03-23 21:10:05,320 - INFO - Database connection OK.
+2026-03-23 21:10:05,321 - INFO - Starting crawler...
+2026-03-23 21:10:05,321 - INFO - Crawling all news via API (first run)
+2026-03-23 21:13:28,017 - INFO - Database connection OK.
+2026-03-23 21:13:28,017 - INFO - Starting crawler...
+2026-03-23 21:13:28,018 - INFO - Crawling all news via API (first run)
+2026-03-23 21:15:22,732 - INFO - Crawling prices from 2016-01-01 to 2026-03-23
+2026-03-23 21:15:27,794 - INFO - Crawler completed successfully.
