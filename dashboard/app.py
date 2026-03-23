@@ -18,7 +18,6 @@ from src.database.db_connection import get_db_engine
 
 st.set_page_config(page_title="Stock News Dashboard", layout="wide", initial_sidebar_state="expanded")
 
-# Custom CSS để tạo hiệu ứng đẹp
 st.markdown("""
 <style>
     .main-header {
@@ -76,7 +75,7 @@ if engine is None:
     st.stop()
 
 # =========================
-# STOPWORDS (từ EDA)
+# STOPWORDS 
 # =========================
 basic_stopwords = set("""
 và là của có trong một những các đã đang sẽ cho khi thì mà được với về từ này kia đó đây ấy vì do nên nếu cũng chỉ lại ra lên xuống vào đi đến rồi như
@@ -132,8 +131,8 @@ for w in stopwords_raw:
 # =========================
 def clean_text(text):
     text = text.lower()
-    text = re.sub(r'\d+', ' ', text)          # xóa số
-    text = re.sub(r'[^\w\s]', ' ', text)      # xóa dấu câu
+    text = re.sub(r'\d+', ' ', text)         
+    text = re.sub(r'[^\w\s]', ' ', text)   
     return text
 
 def process_text(text):

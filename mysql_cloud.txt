@@ -1,0 +1,9 @@
+#MySQL Cloud
+
+Host = bzuoyb19zgyn77emwisi-mysql.services.clever-cloud.com
+Database Name = bzuoyb19zgyn77emwisi
+User = u2csm0chlybzznu1
+Password = 17WBU0XiFTDk3JiXAinZ
+Port = 3306
+Connection Url = mysql://u2csm0chlybzznu1:17WBU0XiFTDk3JiXAinZ@bzuoyb19zgyn77emwisi-mysql.services.clever-cloud.com:3306/bzuoyb19zgyn77emwisi
+MySQL CLI = mysql -h bzuoyb19zgyn77emwisi-mysql.services.clever-cloud.com -P 3306 -u u2csm0chlybzznu1 -p bzuoyb19zgyn77emwisi
