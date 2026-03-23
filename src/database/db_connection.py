@@ -14,9 +14,21 @@ def get_db_engine():
     port = os.getenv("DB_PORT", "3306")
     database = os.getenv("DB_NAME", "web_analytics_project")
 
-    encoded_password = quote_plus(password)
+    if not user or not password:
+        print("Missing DB_USER or DB_PASSWORD environment variables")
+        return None
+    if not host or not port or not database:
+        print("Missing DB_HOST, DB_PORT, or DB_NAME environment variables")
+        return None
 
-    connection_string = f"mysql+mysqlconnector://{user}:{encoded_password}@{host}:{port}/{database}?charset=utf8mb4"
+    try:
+        port = int(port)
+    except ValueError:
+        print(f"Invalid DB_PORT: {port}, using default 3306")
+        port = 3306
+
+    encoded_password = quote_plus(password)
+    connection_string = f"mysql+pymysql://{user}:{encoded_password}@{host}:{port}/{database}?charset=utf8mb4"
 
     try:
         engine = create_engine(connection_string, pool_pre_ping=True)
