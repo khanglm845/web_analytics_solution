@@ -59,6 +59,10 @@ def get_news_links_by_ticker(ticker, num_pages=5):
     return links_data
 
 def scrape_cafef_news(stocks, since_date=None, delay_between_articles=1.0):
+    """
+    Crawl news from CafeF for given stocks.
+    If since_date is provided (string 'YYYY-MM-DD'), only keep articles with publish_time >= since_date.
+    """
     if since_date and isinstance(since_date, str):
         since_date = datetime.strptime(since_date, '%Y-%m-%d')
     
@@ -69,10 +73,14 @@ def scrape_cafef_news(stocks, since_date=None, delay_between_articles=1.0):
         for url in news_urls:
             detail_data = scrape_cafef_article(url)
             if detail_data and detail_data["Title"]:
+                # Parse publish_time
                 pub_str = detail_data["PublishTime"]
                 pub_time = None
                 if pub_str:
+                    # Có thể có định dạng "23-03-2026 - 17:42 PM" hoặc "20-03-2026 - 21:15 PM"
+                    # Tách ngày và giờ
                     try:
+                        # Loại bỏ " PM"/" AM"
                         clean = pub_str.replace(" PM", "").replace(" AM", "")
                         parts = clean.split(" - ")
                         if len(parts) == 2:
@@ -99,18 +107,21 @@ def scrape_cafef_news(stocks, since_date=None, delay_between_articles=1.0):
         return pd.DataFrame()
     
     df_full = pd.DataFrame(all_articles)
+    # Lọc lại theo since_date (nếu có)
     if since_date and 'publish_time' in df_full.columns:
         df_full['publish_time'] = pd.to_datetime(df_full['publish_time'], errors='coerce')
         original_len = len(df_full)
         df_full = df_full[df_full['publish_time'] >= since_date]
         print(f"Filtered by since_date ({since_date}): kept {len(df_full)} out of {original_len} rows")
     
+    # Lưu CSV
     output_dir = os.path.join("data", "raw")
     os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, "df_news.csv")
     df_full.to_csv(output_file, index=False, encoding="utf-8-sig")
     print(f"Saved to {output_file}")
     
+    # Insert vào DB
     engine = get_db_engine()
     if engine:
         with engine.connect() as conn:

@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.append(str(BASE_DIR))
 
 from src.database.db_connection import get_db_engine
-from src.crawlers.cafef_api_scraper import scrape_cafef_api
+from src.crawlers.cafef_scraper import scrape_cafef_news
 from src.crawlers.vnstock_api import get_price_data, save_to_db as save_price_to_db
 
 LOG_DIR = BASE_DIR / "logs"
@@ -58,6 +58,7 @@ def check_database():
 def run_crawler(since_date=None):
     logger.info("Starting crawler...")
     stocks = ["VIC", "HAG", "TTF"]
+
     if since_date:
         since_str = since_date.strftime('%Y-%m-%d')
         logger.info(f"Crawling news via API from {since_str}")
@@ -66,8 +67,7 @@ def run_crawler(since_date=None):
         logger.info("Crawling all news via API (first run)")
 
     try:
-        num_pages = 10 if since_str is None else 1
-        scrape_cafef_api(stocks, since_date=since_str, num_pages=num_pages)
+        scrape_cafef_news(stocks, since_date=since_str)
     except Exception as e:
         logger.error(f"News crawler failed: {e}", exc_info=True)
         return False
@@ -91,11 +91,11 @@ def run_crawler(since_date=None):
     logger.info("Crawler completed successfully.")
     return True
 
-def run_time_mapping():
+def run_time_mapping(since_date=None):
     from src.utils.time_mapping import main as time_mapping_main
     logger.info("Starting time mapping...")
     try:
-        time_mapping_main()
+        time_mapping_main(since_date)
         logger.info("Time mapping completed.")
         return True
     except Exception as e:
@@ -115,22 +115,23 @@ def run_sentiment():
 
 def run_full_pipeline():
     last_run = get_last_run()
-
     if last_run:
         since = last_run - timedelta(days=1)
         logger.info(f"Last successful run: {last_run}. Crawling data from {since}")
         if not run_crawler(since_date=since):
             logger.error("Crawler failed, pipeline aborted.")
             return False
+        if not run_time_mapping(since_date=since):
+            logger.error("Time mapping failed, pipeline aborted.")
+            return False
     else:
         logger.info("No previous run. Crawling all data.")
         if not run_crawler():
             logger.error("Crawler failed, pipeline aborted.")
             return False
-
-    if not run_time_mapping():
-        logger.error("Time mapping failed, pipeline aborted.")
-        return False
+        if not run_time_mapping():
+            logger.error("Time mapping failed, pipeline aborted.")
+            return False
 
     if not run_sentiment():
         logger.error("Sentiment scoring failed, pipeline aborted.")
