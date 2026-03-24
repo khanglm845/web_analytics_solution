@@ -4,6 +4,7 @@ import logging
 import argparse
 from pathlib import Path
 from datetime import datetime, timedelta
+from sqlalchemy import text
 
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.append(str(BASE_DIR))
@@ -27,6 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 def get_last_run():
     if LAST_RUN_FILE.exists():
         try:
@@ -38,6 +40,7 @@ def get_last_run():
             logger.warning(f"Error reading last_run file: {e}")
     return None
 
+
 def set_last_run(timestamp):
     try:
         with open(LAST_RUN_FILE, 'w') as f:
@@ -45,6 +48,7 @@ def set_last_run(timestamp):
         logger.info(f"Updated last_run to {timestamp.isoformat()}")
     except Exception as e:
         logger.error(f"Failed to write last_run file: {e}")
+
 
 def check_database():
     engine = get_db_engine()
@@ -54,7 +58,8 @@ def check_database():
     logger.info("Database connection OK.")
     return engine
 
-def run_crawler(since_date=None):
+
+def run_crawler(since_date: datetime = None) -> bool:
     logger.info("Starting crawler...")
     stocks = ["VIC", "HAG", "TTF"]
 
@@ -66,11 +71,7 @@ def run_crawler(since_date=None):
         logger.info("Crawling all news (first run)")
 
     try:
-        # Hàm scrape_cafef_news trong cafef_scraper.py không nhận since_date,
-        # nhưng nó đã được viết để chỉ lấy 20 bài mới nhất và tự kiểm tra trùng.
-        # Nếu bạn vẫn muốn lọc theo ngày, bạn có thể sửa lại trong crawler.
-        # Ở đây ta gọi không có since_date.
-        scrape_cafef_news(stocks)
+        scrape_cafef_news(stocks, since_date=since_str)
     except Exception as e:
         logger.error(f"News crawler failed: {e}", exc_info=True)
         return False
@@ -94,26 +95,28 @@ def run_crawler(since_date=None):
     logger.info("Crawler completed successfully.")
     return True
 
-def run_sentiment(since_date=None):
+
+def run_sentiment(since_date: datetime = None) -> bool:
     from src.models.sentiment_scorer import main as sentiment_main
     logger.info("Starting sentiment scoring...")
     try:
-        sentiment_main(since_date)  # Truyền since_date để chỉ xử lý tin mới
+        sentiment_main(since_date)
         logger.info("Sentiment scoring completed.")
         return True
     except Exception as e:
         logger.error(f"Sentiment scoring failed: {e}", exc_info=True)
         return False
 
+
 def run_full_pipeline():
     last_run = get_last_run()
     if last_run:
+        # Crawl data from the day before last run to avoid missing any news
         since = last_run - timedelta(days=1)
         logger.info(f"Last successful run: {last_run}. Crawling data from {since}")
         if not run_crawler(since_date=since):
             logger.error("Crawler failed, pipeline aborted.")
             return False
-        # Không chạy time_mapping nữa
         if not run_sentiment(since_date=since):
             logger.error("Sentiment scoring failed, pipeline aborted.")
             return False
@@ -122,7 +125,6 @@ def run_full_pipeline():
         if not run_crawler():
             logger.error("Crawler failed, pipeline aborted.")
             return False
-        # Lần đầu chạy, xử lý toàn bộ dữ liệu (since_date=None)
         if not run_sentiment():
             logger.error("Sentiment scoring failed, pipeline aborted.")
             return False
@@ -131,6 +133,7 @@ def run_full_pipeline():
     set_last_run(now)
     logger.info(f"Pipeline completed successfully. Last run updated to {now}")
     return True
+
 
 def main():
     parser = argparse.ArgumentParser(description="Run the VN30 News Quantifier pipeline.")
@@ -151,6 +154,7 @@ def main():
         run_crawler()
     elif args.step == "sentiment":
         run_sentiment()
+
 
 if __name__ == "__main__":
     main()
