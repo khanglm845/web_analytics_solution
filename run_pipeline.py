@@ -28,7 +28,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 def get_last_run():
     if LAST_RUN_FILE.exists():
         try:
@@ -40,7 +39,6 @@ def get_last_run():
             logger.warning(f"Error reading last_run file: {e}")
     return None
 
-
 def set_last_run(timestamp):
     try:
         with open(LAST_RUN_FILE, 'w') as f:
@@ -48,7 +46,6 @@ def set_last_run(timestamp):
         logger.info(f"Updated last_run to {timestamp.isoformat()}")
     except Exception as e:
         logger.error(f"Failed to write last_run file: {e}")
-
 
 def check_database():
     engine = get_db_engine()
@@ -58,8 +55,7 @@ def check_database():
     logger.info("Database connection OK.")
     return engine
 
-
-def run_crawler(since_date: datetime = None) -> bool:
+def run_crawler(since_date=None):
     logger.info("Starting crawler...")
     stocks = ["VIC", "HAG", "TTF"]
 
@@ -95,8 +91,7 @@ def run_crawler(since_date: datetime = None) -> bool:
     logger.info("Crawler completed successfully.")
     return True
 
-
-def run_sentiment(since_date: datetime = None) -> bool:
+def run_sentiment(since_date=None):
     from src.models.sentiment_scorer import main as sentiment_main
     logger.info("Starting sentiment scoring...")
     try:
@@ -107,11 +102,9 @@ def run_sentiment(since_date: datetime = None) -> bool:
         logger.error(f"Sentiment scoring failed: {e}", exc_info=True)
         return False
 
-
 def run_full_pipeline():
     last_run = get_last_run()
     if last_run:
-        # Crawl data from the day before last run to avoid missing any news
         since = last_run - timedelta(days=1)
         logger.info(f"Last successful run: {last_run}. Crawling data from {since}")
         if not run_crawler(since_date=since):
@@ -134,7 +127,6 @@ def run_full_pipeline():
     logger.info(f"Pipeline completed successfully. Last run updated to {now}")
     return True
 
-
 def main():
     parser = argparse.ArgumentParser(description="Run the VN30 News Quantifier pipeline.")
     parser.add_argument(
@@ -154,7 +146,6 @@ def main():
         run_crawler()
     elif args.step == "sentiment":
         run_sentiment()
-
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,3 @@
-# src/crawlers/cafef_scraper.py
 import os
 import requests
 import time
@@ -9,6 +8,10 @@ from sqlalchemy import text
 from src.database.db_connection import get_db_engine
 
 def fetch_news_list(symbol, page_size=20, timeout=10):
+    """
+    Lấy danh sách 20 bài báo mới nhất từ AJAX API của CafeF.
+    Trả về list các dict: {'time_str', 'title', 'url'}
+    """
     url = f"https://cafef.vn/du-lieu/Ajax/Events_RelatedNews_New.aspx?symbol={symbol}&startIndex=0&PageSize={page_size}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -25,7 +28,6 @@ def fetch_news_list(symbol, page_size=20, timeout=10):
 
     soup = BeautifulSoup(resp.text, "html.parser")
     items = []
-
     for time_span, a_tag in zip(soup.find_all("span", class_="timeTitle"),
                                  soup.find_all("a", class_="docnhanhTitle")):
         time_str = time_span.text.strip()
@@ -41,7 +43,7 @@ def fetch_news_list(symbol, page_size=20, timeout=10):
     return items
 
 def parse_publish_time(time_str):
-
+    """Chuyển đổi chuỗi thời gian "23/03/2026 17:42" thành datetime."""
     for fmt in ("%d/%m/%Y %H:%M", "%d/%m/%Y"):
         try:
             return datetime.strptime(time_str, fmt)
@@ -50,6 +52,7 @@ def parse_publish_time(time_str):
     return None
 
 def scrape_article_detail(url, timeout=10):
+    """Lấy nội dung chi tiết của bài báo."""
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
         resp = requests.get(url, headers=headers, timeout=timeout)
@@ -70,13 +73,22 @@ def scrape_article_detail(url, timeout=10):
         content = None
     return title, sapo, content
 
-def scrape_cafef_news(stocks, delay_between_articles=1.0):
-
+def scrape_cafef_news(stocks, since_date=None, delay_between_articles=1.0):
+    """
+    Crawl 20 bài báo mới nhất cho mỗi mã trong stocks.
+    Nếu since_date được cung cấp (string 'YYYY-MM-DD'), chỉ lấy bài có publish_time >= since_date.
+    Chỉ lấy những bài chưa có trong DB (dựa trên URL).
+    """
     engine = get_db_engine()
     if engine is None:
-        print("Cannot connect to DB. Stopping crawler.")
+        print("Không thể kết nối DB. Dừng crawler.")
         return pd.DataFrame()
 
+    # Nếu since_date là datetime, chuyển thành string
+    if since_date and isinstance(since_date, datetime):
+        since_date = since_date.strftime('%Y-%m-%d')
+
+    # Lấy danh sách URL đã có trong DB để tránh crawl lại
     with engine.connect() as conn:
         existing_urls = set(row[0] for row in conn.execute(text("SELECT url FROM raw_news")).fetchall())
 
@@ -85,25 +97,32 @@ def scrape_cafef_news(stocks, delay_between_articles=1.0):
         print(f"\n===== Crawling {ticker} =====")
         items = fetch_news_list(ticker, page_size=20)
         if not items:
-            print(f"No news list retrieved for {ticker}")
+            print(f"Không lấy được danh sách tin cho {ticker}")
             continue
-        print(f"Found {len(items)} articles.")
+        print(f"Tìm thấy {len(items)} bài báo.")
 
         for item in items:
             url = item["url"]
             if url in existing_urls:
-                print(f"Already exists, skipping: {item['title'][:50]}")
+                print(f"Đã tồn tại, bỏ qua: {item['title'][:50]}")
                 continue
 
+            # Lấy chi tiết bài báo
             title, sapo, content = scrape_article_detail(url)
             if not title:
-                print(f"Failed to fetch content: {url}")
+                print(f"Không lấy được nội dung: {url}")
                 continue
 
             pub_time = parse_publish_time(item["time_str"])
             if not pub_time:
-                print(f"Cannot parse time: {item['time_str']}, skipping.")
+                print(f"Không parse được thời gian: {item['time_str']}, bỏ qua.")
                 continue
+
+            # Lọc theo since_date
+            if since_date:
+                # Chuyển pub_time về string YYYY-MM-DD để so sánh
+                if pub_time.strftime('%Y-%m-%d') < since_date:
+                    continue
 
             all_articles.append({
                 "stock": ticker,
@@ -116,17 +135,19 @@ def scrape_cafef_news(stocks, delay_between_articles=1.0):
             time.sleep(delay_between_articles)
 
     if not all_articles:
-        print("No new articles.")
+        print("Không có bài báo mới.")
         return pd.DataFrame()
 
     df_full = pd.DataFrame(all_articles)
 
+    # Lưu CSV
     output_dir = os.path.join("data", "raw")
     os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, "df_news.csv")
     df_full.to_csv(output_file, index=False, encoding="utf-8-sig")
-    print(f"Saved CSV: {output_file}")
+    print(f"Lưu CSV: {output_file}")
 
+    # Insert vào DB (INSERT IGNORE dựa trên url)
     with engine.connect() as conn:
         for _, row in df_full.iterrows():
             conn.execute(text("""
@@ -141,5 +162,5 @@ def scrape_cafef_news(stocks, delay_between_articles=1.0):
                 "url": row['url']
             })
         conn.commit()
-    print(f"Added {len(df_full)} new articles to database.")
+    print(f"Đã thêm {len(df_full)} bài mới vào database.")
     return df_full
