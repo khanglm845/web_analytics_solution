@@ -4,7 +4,6 @@ import logging
 import argparse
 from pathlib import Path
 from datetime import datetime, timedelta
-from sqlalchemy import text
 
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.append(str(BASE_DIR))
@@ -67,7 +66,11 @@ def run_crawler(since_date=None):
         logger.info("Crawling all news (first run)")
 
     try:
-        scrape_cafef_news(stocks, since_date=since_str)
+        # Hàm scrape_cafef_news trong cafef_scraper.py không nhận since_date,
+        # nhưng nó đã được viết để chỉ lấy 20 bài mới nhất và tự kiểm tra trùng.
+        # Nếu bạn vẫn muốn lọc theo ngày, bạn có thể sửa lại trong crawler.
+        # Ở đây ta gọi không có since_date.
+        scrape_cafef_news(stocks)
     except Exception as e:
         logger.error(f"News crawler failed: {e}", exc_info=True)
         return False
@@ -95,7 +98,7 @@ def run_sentiment(since_date=None):
     from src.models.sentiment_scorer import main as sentiment_main
     logger.info("Starting sentiment scoring...")
     try:
-        sentiment_main(since_date)
+        sentiment_main(since_date)  # Truyền since_date để chỉ xử lý tin mới
         logger.info("Sentiment scoring completed.")
         return True
     except Exception as e:
@@ -110,6 +113,7 @@ def run_full_pipeline():
         if not run_crawler(since_date=since):
             logger.error("Crawler failed, pipeline aborted.")
             return False
+        # Không chạy time_mapping nữa
         if not run_sentiment(since_date=since):
             logger.error("Sentiment scoring failed, pipeline aborted.")
             return False
@@ -118,6 +122,7 @@ def run_full_pipeline():
         if not run_crawler():
             logger.error("Crawler failed, pipeline aborted.")
             return False
+        # Lần đầu chạy, xử lý toàn bộ dữ liệu (since_date=None)
         if not run_sentiment():
             logger.error("Sentiment scoring failed, pipeline aborted.")
             return False

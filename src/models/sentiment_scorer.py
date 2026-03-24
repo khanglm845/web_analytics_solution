@@ -3,42 +3,61 @@ import sys
 import logging
 import subprocess
 import pandas as pd
-import numpy as np
 from sqlalchemy import text
 from datetime import datetime
-from typing import Optional
 
+# =========================
+# CONFIG PATH
+# =========================
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from src.config import DATA_PROCESSED_PATH, DATA_MODEL_PATH
 from src.database.db_connection import get_db_engine
 
+# =========================
+# LOGGING
+# =========================
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# =========================
+# CONSTANTS
+# =========================
 OUTPUT_FILE = os.path.join(DATA_MODEL_PATH, "sentiment_scores.csv")
 
 MODEL_REPO = "https://huggingface.co/mnguyn11/phobert-stock-sentiment-vn30"
 LOCAL_MODEL_DIR = os.path.join(DATA_MODEL_PATH, "phobert-stock-sentiment-vn30")
 
 
+# =========================
+# MODEL WRAPPER
+# =========================
 class SentimentScorer:
     def __init__(self, model_dir: str = LOCAL_MODEL_DIR):
         self.model_dir = model_dir
         self.predictor = None
 
     def _clone_model(self):
+        """Clone repo nếu chưa tồn tại"""
         if not os.path.exists(self.model_dir):
             logger.info("Cloning model repo...")
-            subprocess.run(["git", "clone", MODEL_REPO, self.model_dir], check=True)
+            subprocess.run([
+                "git", "clone",
+                MODEL_REPO,
+                self.model_dir
+            ], check=True)
 
     def _check_dependencies(self):
+        """Check underthesea"""
         try:
             import underthesea  # noqa
         except ImportError:
-            raise ImportError("Missing 'underthesea'. Run: pip install underthesea")
+            raise ImportError(
+                "Thiếu thư viện 'underthesea'. Chạy: pip install underthesea"
+            )
 
     def load_model(self):
         logger.info("Loading StockSentimentPredictor...")
+
         self._clone_model()
         self._check_dependencies()
 
@@ -47,6 +66,7 @@ class SentimentScorer:
             raise FileNotFoundError(f"modeling.py not found in {self.model_dir}")
 
         sys.path.insert(0, os.path.abspath(self.model_dir))
+
         current_dir = os.getcwd()
         try:
             os.chdir(self.model_dir)
@@ -73,12 +93,16 @@ class SentimentScorer:
         return result_df
 
 
-def load_and_prepare_data(engine, since_date: Optional[datetime] = None) -> pd.DataFrame:
+# =========================
+# DATA PROCESSING
+# =========================
+def load_and_prepare_data(engine, since_date=None):
     """
-    Load news from raw_news, combine title and sapo.
-    If since_date is given, only fetch news with publish_time >= since_date.
+    Đọc dữ liệu từ bảng raw_news, gộp title và sapo thành text.
+    Nếu since_date được cung cấp (datetime), chỉ lấy tin mới hơn ngày đó.
     """
     if since_date:
+        # Chuyển datetime thành string 'YYYY-MM-DD' để so sánh trong SQL
         since_str = since_date.strftime('%Y-%m-%d')
         query = f"""
             SELECT news_id, ticker, title, sapo
@@ -92,31 +116,28 @@ def load_and_prepare_data(engine, since_date: Optional[datetime] = None) -> pd.D
     df["title"] = df["title"].fillna("")
     df["sapo"] = df["sapo"].fillna("")
     df["text"] = df["title"] + " " + df["sapo"]
+
+    # Đổi tên cột ticker thành stock để phù hợp với model
     df = df.rename(columns={"ticker": "stock"})
     df = df[["news_id", "stock", "text"]].copy()
-
     logger.info(f"Prepared {len(df)} rows for sentiment scoring")
     return df
 
 
+# =========================
+# SAVE CSV
+# =========================
 def save_to_csv(df: pd.DataFrame, output_path: str):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     df.to_csv(output_path, index=False)
     logger.info(f"Saved CSV to {output_path}")
 
 
+# =========================
+# DATABASE
+# =========================
 def insert_to_database(df: pd.DataFrame, engine):
-    # Clean news_id
-    df_clean = df.copy()
-    df_clean["news_id"] = pd.to_numeric(df_clean["news_id"], errors="coerce")
-    df_clean = df_clean[df_clean["news_id"].notna()]
-    if df_clean.empty:
-        logger.warning("No valid news_id found. Skipping insert.")
-        return
-    df_clean["news_id"] = df_clean["news_id"].astype(int)
-    df_clean = df_clean.drop_duplicates(subset=["news_id"])
-
-    rows = df_clean[["news_id", "stock", "text", "pred_label", "sentiment_score"]] \
+    rows = df[["news_id", "stock", "text", "pred_label", "sentiment_score"]] \
         .rename(columns={"stock": "ticker", "pred_label": "label"}) \
         .to_dict(orient="records")
 
@@ -133,27 +154,38 @@ def insert_to_database(df: pd.DataFrame, engine):
     with engine.begin() as conn:
         conn.execute(text(query), rows)
 
-    logger.info(f"Inserted/updated {len(rows)} rows into news_analytics")
+    logger.info(f"Inserted {len(rows)} rows into database")
 
 
-def main(since_date: Optional[datetime] = None):
+# =========================
+# MAIN
+# =========================
+def main(since_date=None):
+    """
+    since_date: datetime object, nếu None thì xử lý toàn bộ dữ liệu.
+    """
     engine = get_db_engine()
     if engine is None:
         logger.error("Cannot connect to database.")
         sys.exit(1)
 
+    # 1. Load data
     df = load_and_prepare_data(engine, since_date)
     if df.empty:
         logger.info("No new news to process.")
         return
 
+    # 2. Load model
     scorer = SentimentScorer()
     scorer.load_model()
 
+    # 3. Predict
     df_scored = scorer.predict_dataframe(df)
 
+    # 4. Save CSV
     save_to_csv(df_scored, OUTPUT_FILE)
 
+    # 5. Insert DB
     try:
         insert_to_database(df_scored, engine)
     except Exception as e:
@@ -162,5 +194,6 @@ def main(since_date: Optional[datetime] = None):
     logger.info("Sentiment scoring completed successfully!")
 
 
+# =========================
 if __name__ == "__main__":
     main()
