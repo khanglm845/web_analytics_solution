@@ -272,3 +272,94 @@ TypeError: scrape_cafef_api() got an unexpected keyword argument 'num_pages'
 2026-03-23 23:17:20,280 - INFO - Loading data from C:\Users\DELL\OneDrive\Phân tích Web\PTDL_WEB_PROJECT\data\processed\df_merged.csv
 2026-03-23 23:17:20,308 - INFO - Prepared 667 rows
 2026-03-23 23:17:20,309 - INFO - Loading StockSentimentPredictor...
+2026-03-23 23:53:53,100 - INFO - Database connection OK.
+2026-03-23 23:53:53,103 - INFO - Last successful run: 2026-03-23 23:08:04.434014. Crawling data from 2026-03-22 23:08:04.434014
+2026-03-23 23:53:53,103 - INFO - Starting crawler...
+2026-03-23 23:53:53,104 - INFO - Crawling news via API from 2026-03-22
+2026-03-23 23:55:18,104 - INFO - Crawling prices from 2026-03-22 to 2026-03-23
+2026-03-23 23:55:21,943 - INFO - Crawler completed successfully.
+2026-03-23 23:55:21,952 - INFO - Starting time mapping...
+2026-03-23 23:55:22,040 - INFO - Time mapping completed.
+2026-03-23 23:55:22,046 - INFO - Starting sentiment scoring...
+2026-03-23 23:55:22,047 - INFO - Loading data from C:\Users\DELL\OneDrive\Phân tích Web\PTDL_WEB_PROJECT\data\processed\df_merged.csv
+2026-03-23 23:55:22,081 - INFO - Prepared 667 rows
+2026-03-23 23:55:22,081 - INFO - Loading StockSentimentPredictor...
+2026-03-23 23:55:31,138 - INFO - HTTP Request: GET https://huggingface.co/api/models/mnguyn11/phobert-stock-sentiment-vn30/revision/main "HTTP/1.1 200 OK"
+2026-03-23 23:55:31,553 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-23 23:55:31,564 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vinai/phobert-base/c1e37c5c86f918761049cef6fa216b4779d0d01d/config.json "HTTP/1.1 200 OK"
+2026-03-23 23:55:32,044 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+2026-03-23 23:55:32,045 - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-03-23 23:55:32,382 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base "HTTP/1.1 200 OK"
+2026-03-23 23:55:32,737 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/commits/main "HTTP/1.1 200 OK"
+2026-03-23 23:55:33,042 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/discussions?p=0 "HTTP/1.1 200 OK"
+2026-03-23 23:55:33,406 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/commits/refs%2Fpr%2F7 "HTTP/1.1 200 OK"
+2026-03-23 23:55:33,691 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/refs%2Fpr%2F7/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+2026-03-23 23:55:33,989 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/refs%2Fpr%2F7/model.safetensors "HTTP/1.1 302 Found"
+2026-03-23 23:55:35,400 - INFO - Model loaded successfully
+2026-03-23 23:55:35,401 - INFO - Running prediction...
+2026-03-24 20:17:45,254 - INFO - Database connection OK.
+2026-03-24 20:17:45,275 - INFO - Last successful run: 2026-03-23 23:08:04.434014. Crawling data from 2026-03-22 23:08:04.434014
+2026-03-24 20:17:45,275 - INFO - Starting crawler...
+2026-03-24 20:17:45,276 - INFO - Crawling news from 2026-03-22
+2026-03-24 20:20:20,276 - INFO - Crawling prices from 2026-03-22 to 2026-03-24
+2026-03-24 20:20:38,961 - INFO - Crawler completed successfully.
+2026-03-24 20:20:39,077 - INFO - Starting sentiment scoring...
+2026-03-24 20:20:39,257 - INFO - Prepared 4 rows for sentiment scoring
+2026-03-24 20:20:39,259 - INFO - Loading StockSentimentPredictor...
+2026-03-24 20:22:11,124 - INFO - HTTP Request: GET https://huggingface.co/api/models/mnguyn11/phobert-stock-sentiment-vn30/revision/main "HTTP/1.1 200 OK"
+2026-03-24 20:22:12,559 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-24 20:22:12,562 - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-03-24 20:22:12,574 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vinai/phobert-base/c1e37c5c86f918761049cef6fa216b4779d0d01d/config.json "HTTP/1.1 200 OK"
+2026-03-24 20:22:13,446 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+2026-03-24 20:22:14,087 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base "HTTP/1.1 200 OK"
+2026-03-24 20:22:14,456 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/commits/main "HTTP/1.1 200 OK"
+2026-03-24 20:22:14,876 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/discussions?p=0 "HTTP/1.1 200 OK"
+2026-03-24 20:22:15,218 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/commits/refs%2Fpr%2F7 "HTTP/1.1 200 OK"
+2026-03-24 20:22:15,677 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/refs%2Fpr%2F7/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+2026-03-24 20:22:15,973 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/refs%2Fpr%2F7/model.safetensors "HTTP/1.1 302 Found"
+2026-03-24 20:22:20,619 - INFO - Model loaded successfully
+2026-03-24 20:22:20,620 - INFO - Running prediction...
+2026-03-24 20:22:25,442 - INFO - Saved CSV to C:\Users\DELL\OneDrive\Phân tích Web\PTDL_WEB_PROJECT\data\model\sentiment_scores.csv
+2026-03-24 20:22:25,521 - INFO - Inserted 4 rows into database
+2026-03-24 20:22:25,521 - INFO - Sentiment scoring completed successfully!
+2026-03-24 20:22:25,589 - INFO - Sentiment scoring completed.
+2026-03-24 20:22:25,591 - INFO - Updated last_run to 2026-03-24T20:22:25.589670
+2026-03-24 20:22:25,592 - INFO - Pipeline completed successfully. Last run updated to 2026-03-24 20:22:25.589670
+2026-03-24 20:31:43,437 - INFO - Database connection OK.
+2026-03-24 20:31:43,438 - INFO - Last successful run: 2026-03-24 20:22:25.589670. Crawling data from 2026-03-23 20:22:25.589670
+2026-03-24 20:31:43,439 - INFO - Starting crawler...
+2026-03-24 20:31:43,439 - INFO - Crawling news from 2026-03-23
+2026-03-24 20:32:53,058 - INFO - Crawling prices from 2026-03-23 to 2026-03-24
+2026-03-24 20:33:01,089 - INFO - Crawler completed successfully.
+2026-03-24 20:33:01,111 - INFO - Starting sentiment scoring...
+2026-03-24 20:33:01,139 - INFO - Prepared 3 rows for sentiment scoring
+2026-03-24 20:33:01,140 - INFO - Loading StockSentimentPredictor...
+2026-03-24 20:33:01,297 - ERROR - Sentiment scoring failed, pipeline aborted.
+2026-03-24 20:34:58,958 - INFO - Database connection OK.
+2026-03-24 20:34:58,959 - INFO - Last successful run: 2026-03-24 20:22:25.589670. Crawling data from 2026-03-23 20:22:25.589670
+2026-03-24 20:34:58,960 - INFO - Starting crawler...
+2026-03-24 20:34:58,961 - INFO - Crawling news from 2026-03-23
+2026-03-24 20:36:13,491 - INFO - Crawling prices from 2026-03-23 to 2026-03-24
+2026-03-24 20:36:22,102 - INFO - Crawler completed successfully.
+2026-03-24 20:36:22,126 - INFO - Starting sentiment scoring...
+2026-03-24 20:36:22,157 - INFO - Prepared 3 rows for sentiment scoring
+2026-03-24 20:36:22,158 - INFO - Loading StockSentimentPredictor...
+2026-03-24 20:36:41,915 - INFO - HTTP Request: GET https://huggingface.co/api/models/mnguyn11/phobert-stock-sentiment-vn30/revision/main "HTTP/1.1 200 OK"
+2026-03-24 20:36:42,568 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-24 20:36:42,570 - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-03-24 20:36:42,581 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/vinai/phobert-base/c1e37c5c86f918761049cef6fa216b4779d0d01d/config.json "HTTP/1.1 200 OK"
+2026-03-24 20:36:43,284 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+2026-03-24 20:36:43,934 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base "HTTP/1.1 200 OK"
+2026-03-24 20:36:44,432 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/commits/main "HTTP/1.1 200 OK"
+2026-03-24 20:36:44,936 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/discussions?p=0 "HTTP/1.1 200 OK"
+2026-03-24 20:36:45,395 - INFO - HTTP Request: GET https://huggingface.co/api/models/vinai/phobert-base/commits/refs%2Fpr%2F7 "HTTP/1.1 200 OK"
+2026-03-24 20:36:45,676 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/refs%2Fpr%2F7/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+2026-03-24 20:36:45,980 - INFO - HTTP Request: HEAD https://huggingface.co/vinai/phobert-base/resolve/refs%2Fpr%2F7/model.safetensors "HTTP/1.1 302 Found"
+2026-03-24 20:36:49,180 - INFO - Model loaded successfully
+2026-03-24 20:36:49,181 - INFO - Running prediction...
+2026-03-24 20:36:53,013 - INFO - Saved CSV to C:\Users\DELL\OneDrive\Phân tích Web\PTDL_WEB_PROJECT\data\model\sentiment_scores.csv
+2026-03-24 20:36:53,032 - INFO - Inserted 3 rows into database
+2026-03-24 20:36:53,033 - INFO - Sentiment scoring completed successfully!
+2026-03-24 20:36:53,125 - INFO - Sentiment scoring completed.
+2026-03-24 20:36:53,139 - INFO - Updated last_run to 2026-03-24T20:36:53.136044
+2026-03-24 20:36:53,171 - INFO - Pipeline completed successfully. Last run updated to 2026-03-24 20:36:53.136044

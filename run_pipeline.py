@@ -4,7 +4,6 @@ import logging
 import argparse
 from pathlib import Path
 from datetime import datetime, timedelta
-from sqlalchemy import text
 
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.append(str(BASE_DIR))
@@ -61,13 +60,17 @@ def run_crawler(since_date=None):
 
     if since_date:
         since_str = since_date.strftime('%Y-%m-%d')
-        logger.info(f"Crawling news via API from {since_str}")
+        logger.info(f"Crawling news from {since_str}")
     else:
         since_str = None
-        logger.info("Crawling all news via API (first run)")
+        logger.info("Crawling all news (first run)")
 
     try:
-        scrape_cafef_news(stocks, since_date=since_str)
+        # Hàm scrape_cafef_news trong cafef_scraper.py không nhận since_date,
+        # nhưng nó đã được viết để chỉ lấy 20 bài mới nhất và tự kiểm tra trùng.
+        # Nếu bạn vẫn muốn lọc theo ngày, bạn có thể sửa lại trong crawler.
+        # Ở đây ta gọi không có since_date.
+        scrape_cafef_news(stocks)
     except Exception as e:
         logger.error(f"News crawler failed: {e}", exc_info=True)
         return False
@@ -91,22 +94,11 @@ def run_crawler(since_date=None):
     logger.info("Crawler completed successfully.")
     return True
 
-def run_time_mapping(since_date=None):
-    from src.utils.time_mapping import main as time_mapping_main
-    logger.info("Starting time mapping...")
-    try:
-        time_mapping_main(since_date)
-        logger.info("Time mapping completed.")
-        return True
-    except Exception as e:
-        logger.error(f"Time mapping failed: {e}", exc_info=True)
-        return False
-
-def run_sentiment():
+def run_sentiment(since_date=None):
     from src.models.sentiment_scorer import main as sentiment_main
     logger.info("Starting sentiment scoring...")
     try:
-        sentiment_main()
+        sentiment_main(since_date)  # Truyền since_date để chỉ xử lý tin mới
         logger.info("Sentiment scoring completed.")
         return True
     except Exception as e:
@@ -121,21 +113,19 @@ def run_full_pipeline():
         if not run_crawler(since_date=since):
             logger.error("Crawler failed, pipeline aborted.")
             return False
-        if not run_time_mapping(since_date=since):
-            logger.error("Time mapping failed, pipeline aborted.")
+        # Không chạy time_mapping nữa
+        if not run_sentiment(since_date=since):
+            logger.error("Sentiment scoring failed, pipeline aborted.")
             return False
     else:
         logger.info("No previous run. Crawling all data.")
         if not run_crawler():
             logger.error("Crawler failed, pipeline aborted.")
             return False
-        if not run_time_mapping():
-            logger.error("Time mapping failed, pipeline aborted.")
+        # Lần đầu chạy, xử lý toàn bộ dữ liệu (since_date=None)
+        if not run_sentiment():
+            logger.error("Sentiment scoring failed, pipeline aborted.")
             return False
-
-    if not run_sentiment():
-        logger.error("Sentiment scoring failed, pipeline aborted.")
-        return False
 
     now = datetime.now()
     set_last_run(now)
@@ -146,7 +136,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run the VN30 News Quantifier pipeline.")
     parser.add_argument(
         "--step",
-        choices=["all", "crawl", "time_mapping", "sentiment"],
+        choices=["all", "crawl", "sentiment"],
         default="all",
         help="Choose which step to run. Default: all"
     )
@@ -159,8 +149,6 @@ def main():
             sys.exit(1)
     elif args.step == "crawl":
         run_crawler()
-    elif args.step == "time_mapping":
-        run_time_mapping()
     elif args.step == "sentiment":
         run_sentiment()
 

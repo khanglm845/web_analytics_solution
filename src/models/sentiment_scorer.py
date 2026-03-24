@@ -4,6 +4,7 @@ import logging
 import subprocess
 import pandas as pd
 from sqlalchemy import text
+from datetime import datetime
 
 # =========================
 # CONFIG PATH
@@ -21,7 +22,6 @@ logger = logging.getLogger(__name__)
 # =========================
 # CONSTANTS
 # =========================
-INPUT_FILE = os.path.join(DATA_PROCESSED_PATH, "df_merged.csv")
 OUTPUT_FILE = os.path.join(DATA_MODEL_PATH, "sentiment_scores.csv")
 
 MODEL_REPO = "https://huggingface.co/mnguyn11/phobert-stock-sentiment-vn30"
@@ -37,10 +37,8 @@ class SentimentScorer:
         self.predictor = None
 
     def _clone_model(self):
-        """Clone repo nếu chưa tồn tại"""
         if not os.path.exists(self.model_dir):
             logger.info("Cloning model repo...")
-
             subprocess.run([
                 "git", "clone",
                 MODEL_REPO,
@@ -50,38 +48,29 @@ class SentimentScorer:
     def _check_dependencies(self):
         """Check underthesea"""
         try:
-            import underthesea  # noqa
+            import underthesea  
         except ImportError:
             raise ImportError(
-                "Thiếu thư viện 'underthesea'. Chạy: pip install underthesea"
+                "Not find 'underthesea'. Run: pip install underthesea"
             )
 
     def load_model(self):
         logger.info("Loading StockSentimentPredictor...")
 
-        # 1. Clone repo
         self._clone_model()
-
-        # 2. Check dependency
         self._check_dependencies()
 
-        # 3. Kiểm tra file modeling.py
         modeling_path = os.path.join(self.model_dir, "modeling.py")
         if not os.path.exists(modeling_path):
             raise FileNotFoundError(f"modeling.py not found in {self.model_dir}")
 
-        # 4. Add path
         sys.path.insert(0, os.path.abspath(self.model_dir))
 
-        # 5. Load model 
         current_dir = os.getcwd()
-
         try:
             os.chdir(self.model_dir)
-
             from modeling import StockSentimentPredictor
             self.predictor = StockSentimentPredictor()
-
         finally:
             os.chdir(current_dir)
 
@@ -92,9 +81,7 @@ class SentimentScorer:
             raise RuntimeError("Model not loaded")
 
         logger.info("Running prediction...")
-
         result_df = self.predictor.predict_batch(df)
-
 
         if "prob_POS" in result_df.columns and "prob_NEG" in result_df.columns:
             result_df["sentiment_score"] = result_df["prob_POS"] - result_df["prob_NEG"]
@@ -108,23 +95,26 @@ class SentimentScorer:
 # =========================
 # DATA PROCESSING
 # =========================
-def load_and_prepare_data(filepath: str) -> pd.DataFrame:
-    logger.info(f"Loading data from {filepath}")
-    df = pd.read_csv(filepath)
+def load_and_prepare_data(engine, since_date=None):
 
-    required_cols = ["news_id", "ticker", "title", "sapo"]
-    for col in required_cols:
-        if col not in df.columns:
-            raise ValueError(f"Missing column: {col}")
+    if since_date:
+        since_str = since_date.strftime('%Y-%m-%d')
+        query = f"""
+            SELECT news_id, ticker, title, sapo
+            FROM raw_news
+            WHERE publish_time >= '{since_str}'
+        """
+    else:
+        query = "SELECT news_id, ticker, title, sapo FROM raw_news"
 
+    df = pd.read_sql(query, engine)
     df["title"] = df["title"].fillna("")
     df["sapo"] = df["sapo"].fillna("")
     df["text"] = df["title"] + " " + df["sapo"]
 
     df = df.rename(columns={"ticker": "stock"})
     df = df[["news_id", "stock", "text"]].copy()
-
-    logger.info(f"Prepared {len(df)} rows")
+    logger.info(f"Prepared {len(df)} rows for sentiment scoring")
     return df
 
 
@@ -164,9 +154,18 @@ def insert_to_database(df: pd.DataFrame, engine):
 # =========================
 # MAIN
 # =========================
-def main():
+def main(since_date=None):
+
+    engine = get_db_engine()
+    if engine is None:
+        logger.error("Cannot connect to database.")
+        sys.exit(1)
+
     # 1. Load data
-    df = load_and_prepare_data(INPUT_FILE)
+    df = load_and_prepare_data(engine, since_date)
+    if df.empty:
+        logger.info("No new news to process.")
+        return
 
     # 2. Load model
     scorer = SentimentScorer()
@@ -180,7 +179,6 @@ def main():
 
     # 5. Insert DB
     try:
-        engine = get_db_engine()
         insert_to_database(df_scored, engine)
     except Exception as e:
         logger.error(f"Database error: {e}")
